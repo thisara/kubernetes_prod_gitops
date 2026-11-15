@@ -1,4 +1,4 @@
-name: Install ArgoCD on EKS
+name: Install Argo CD on EKS
 
 on:
   workflow_dispatch:
