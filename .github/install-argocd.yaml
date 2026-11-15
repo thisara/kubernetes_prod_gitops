@@ -1,11 +1,11 @@
-name: Install Argo CD on EKS
+name: Install ArgoCD on EKS
 
 on:
   workflow_dispatch:
 
   push:
     branches:
-      - main
+      - master
     paths:
       - "argocd/**"
       - ".github/workflows/install-argocd.yaml"
