@@ -6,9 +6,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "argocd/**"
-      - ".github/workflows/install-argocd.yaml"
+#    paths:
+#      - "argocd/**"
+#      - ".github/workflows/install-argocd.yaml"
 
 permissions:
   id-token: write
