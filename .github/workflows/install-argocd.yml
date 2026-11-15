@@ -49,6 +49,33 @@ jobs:
           audience: sts.amazonaws.com
           retry-max-attempts: 2
 
+      - name: Debug OIDC Claims
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import json
+          import urllib.request
+          import base64
+
+          request = urllib.request.Request(
+              os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+              + "&audience=sts.amazonaws.com",
+              headers={
+                  "Authorization": "Bearer "
+                  + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]
+              }
+          )
+
+          token = json.load(urllib.request.urlopen(request))["value"]
+          payload = token.split(".")[1]
+          payload += "=" * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+
+          for key in ["iss", "aud", "sub", "repository", "ref"]:
+              print(f"{key}: {claims.get(key)}")
+          PY
+
       - name: Verify AWS identity
         run: |
           aws sts get-caller-identity
