@@ -38,6 +38,18 @@ jobs:
 
     steps:
 
+      - name: Configure runner PATH
+        run: |
+          echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify installed tools
+        run: |
+          echo "$PATH"
+          aws --version
+          kubectl version --client
+          helm version
+          terraform version
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
