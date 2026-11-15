@@ -44,8 +44,10 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::731770490737:role/terraform-managed/github-eks-platform-deployer
+          aws-region: ap-southeast-2
+          audience: sts.amazonaws.com
+          retry-max-attempts: 2
 
       - name: Verify AWS identity
         run: |
