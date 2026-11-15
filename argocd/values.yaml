@@ -1,0 +1,33 @@
+
+global:
+  domain: argocd.internal.example.com
+
+server:
+  replicas: 2
+
+  service:
+    type: ClusterIP
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+repoServer:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+controller:
+  replicas: 1
+
+configs:
+  params:
+    server.insecure: false
