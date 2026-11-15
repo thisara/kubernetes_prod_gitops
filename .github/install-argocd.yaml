@@ -1,0 +1,95 @@
+name: Install Argo CD on EKS
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+    paths:
+      - "argocd/**"
+      - ".github/workflows/install-argocd.yaml"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: argocd-install-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-2
+  EKS_CLUSTER_NAME: file-api-eks
+  ARGOCD_NAMESPACE: argocd
+  ARGOCD_RELEASE: argocd
+
+jobs:
+  install-argocd:
+
+    name: Install Argo CD
+
+    runs-on:
+      - self-hosted
+      - linux
+      - eks-platform
+
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Configure Kubernetes access
+        run: |
+          aws eks update-kubeconfig \
+            --region "$AWS_REGION" \
+            --name "$EKS_CLUSTER_NAME"
+
+      - name: Verify EKS connectivity
+        run: |
+          kubectl get nodes
+
+      - name: Add Argo Helm repository
+        run: |
+          helm repo add argo \
+            https://argoproj.github.io/argo-helm
+
+          helm repo update
+
+      - name: Install or upgrade Argo CD
+        run: |
+          helm upgrade --install "$ARGOCD_RELEASE" \
+            argo/argo-cd \
+            --namespace "$ARGOCD_NAMESPACE" \
+            --create-namespace \
+            --version "$ARGOCD_CHART_VERSION" \
+            --values argocd/values.yaml \
+            --wait \
+            --timeout 10m
+        env:
+          ARGOCD_CHART_VERSION: ${{ vars.ARGOCD_CHART_VERSION }}
+
+      - name: Verify Argo CD deployment
+        run: |
+          kubectl rollout status \
+            deployment/argocd-server \
+            -n "$ARGOCD_NAMESPACE" \
+            --timeout=300s
+
+          kubectl get pods \
+            -n "$ARGOCD_NAMESPACE"
+
+          helm status "$ARGOCD_RELEASE" \
+            -n "$ARGOCD_NAMESPACE"
