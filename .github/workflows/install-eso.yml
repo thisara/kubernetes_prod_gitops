@@ -1,0 +1,97 @@
+name: Install External Secrets Operator
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+  EKS_CLUSTER_NAME: file-api-eks
+  ESO_NAMESPACE: external-secrets
+  ESO_RELEASE: external-secrets
+
+jobs:
+  install-eso:
+    name: Install External Secrets Operator
+    runs-on: [self-hosted, linux, eks-platform]
+
+    steps:
+      - name: Configure runner PATH
+        run: |
+          echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify installed tools
+        run: |
+          echo "$PATH"
+          aws --version
+          kubectl version --client
+          helm version
+          terraform version
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure runner PATH
+        run: |
+          echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Configure EKS kubeconfig
+        run: |
+          export KUBECONFIG="$RUNNER_TEMP/eso-kubeconfig"
+
+          aws eks update-kubeconfig \
+            --name "$EKS_CLUSTER_NAME" \
+            --region "$AWS_REGION" \
+            --kubeconfig "$KUBECONFIG"
+
+          echo "KUBECONFIG=$KUBECONFIG" >> "$GITHUB_ENV"
+
+      - name: Verify cluster connectivity
+        run: |
+          kubectl get nodes
+
+      - name: Add ESO Helm repository
+        run: |
+          helm repo add external-secrets \
+            https://charts.external-secrets.io \
+            --force-update
+
+          helm repo update
+
+      - name: Install External Secrets Operator
+        run: |
+          helm upgrade --install external-secrets \
+            external-secrets/external-secrets \
+            --namespace external-secrets \
+            --create-namespace \
+            --values external-secrets/values.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Verify ESO CRDs
+        run: |
+          kubectl wait \
+            --for=condition=Established \
+            crd/externalsecrets.external-secrets.io \
+            crd/secretstores.external-secrets.io \
+            crd/clustersecretstores.external-secrets.io \
+            --timeout=120s
+
+      - name: Verify ESO deployment
+        run: |
+          kubectl get pods -n external-secrets
+          kubectl get deployments -n external-secrets
+          helm status external-secrets -n external-secrets
