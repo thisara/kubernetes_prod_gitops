@@ -3,6 +3,13 @@ name: Install External Secrets Operator
 on:
   workflow_dispatch:
 
+  push:
+    branches:
+      - master
+#    paths:
+#      - "argocd/**"
+#      - ".github/workflows/install-eso.yaml"
+
 permissions:
   id-token: write
   contents: read
