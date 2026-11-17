@@ -1,0 +1,67 @@
+name: Install AWS Load Balancer Controller
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+    paths:
+      - "alb-controller/**"
+      - ".github/workflows/install-alb-controller.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+  CLUSTER_NAME: file-api-eks
+
+jobs:
+  install-alb:
+    runs-on: [self-hosted, linux, eks-platform]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure PATH
+        run: echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubeconfig
+        run: |
+          export KUBECONFIG="$RUNNER_TEMP/alb-kubeconfig"
+
+          aws eks update-kubeconfig \
+            --name "$CLUSTER_NAME" \
+            --region "$AWS_REGION"
+
+          echo "KUBECONFIG=$KUBECONFIG" >> "$GITHUB_ENV"
+
+      - name: Add Helm repository
+        run: |
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+
+      - name: Install AWS Load Balancer Controller
+        run: |
+          helm upgrade --install aws-load-balancer-controller \
+            eks/aws-load-balancer-controller \
+            --namespace kube-system \
+            --values alb-controller/values.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Verify installation
+        run: |
+          kubectl rollout status \
+            deployment/aws-load-balancer-controller \
+            -n kube-system \
+            --timeout=300s

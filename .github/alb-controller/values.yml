@@ -1,0 +1,24 @@
+clusterName: file-api-eks
+
+region: ap-southeast-2
+
+vpcId: vpc-0fc4975fff694ce58
+
+replicaCount: 2
+
+serviceAccount:
+  create: true
+  name: file-api
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+enableShield: false
+enableWaf: false
+enableWafv2: false
