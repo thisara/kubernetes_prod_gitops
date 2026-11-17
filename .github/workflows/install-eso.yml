@@ -6,9 +6,9 @@ on:
   push:
     branches:
       - master
-#    paths:
-#      - "argocd/**"
-#      - ".github/workflows/install-eso.yaml"
+    paths:
+      - "external-secrets/**"
+      - ".github/workflows/install-eso.yml"
 
 permissions:
   id-token: write
