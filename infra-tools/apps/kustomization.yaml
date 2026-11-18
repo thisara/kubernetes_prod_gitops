@@ -8,3 +8,4 @@ resources:
   - 04-jaeger.yaml
   - 05-telemetry.yaml
   - 06-kiali.yaml
+  - 07-eso.yaml
