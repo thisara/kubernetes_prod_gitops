@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus
+    targetRevision: "93.0.0"
+    helm:
+      releaseName: prometheus
+
+      valuesObject:
+        server:
+          service:
+            type: ClusterIP
+
+          persistentVolume:
+            enabled: false
+
+        alertmanager:
+          enabled: false
+
+        prometheus-pushgateway:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

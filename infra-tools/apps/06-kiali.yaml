@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://kiali.org/helm-charts
+    chart: kiali-server
+    targetRevision: "2.34.0"
+
+    helm:
+      releaseName: kiali-server
+
+      valuesObject:
+        auth:
+          strategy: anonymous
+
+        deployment:
+          accessible_namespaces:
+            - "**"
+
+        external_services:
+          prometheus:
+            url: http://prometheus-server.istio-system.svc.cluster.local:80
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
