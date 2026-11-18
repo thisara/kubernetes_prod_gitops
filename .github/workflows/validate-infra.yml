@@ -1,0 +1,50 @@
+name: Validate Platform GitOps
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "platform/**"
+      - "bootstrap/**"
+      - ".github/workflows/validate-platform.yml"
+
+  push:
+    branches:
+      - master
+    paths:
+      - "platform/**"
+      - "bootstrap/**"
+      - ".github/workflows/validate-platform.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate root application
+        run: |
+          kubectl kustomize platform/applications \
+            > /tmp/platform-applications.yaml
+
+          test -s /tmp/platform-applications.yaml
+
+      - name: Validate telemetry manifest
+        run: |
+          kubectl apply \
+            --dry-run=client \
+            --validate=false \
+            -f platform/istio/telemetry/telemetry.yaml \
+            -o yaml > /tmp/telemetry-validated.yaml
