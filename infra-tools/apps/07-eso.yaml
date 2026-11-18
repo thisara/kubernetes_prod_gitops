@@ -4,13 +4,12 @@ kind: Application
 metadata:
   name: external-secrets
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 
 spec:
   project: default
 
-  source:
+  sources:
+    # Helm chart
     - repoURL: https://charts.external-secrets.io
       chart: external-secrets
       targetRevision: "2.15.0"
@@ -20,9 +19,10 @@ spec:
         valueFiles:
           - $values/infra-tools/values/eso/values.yaml
 
+    # Git repository containing Helm values
     - repoURL: https://github.com/thisara/kubernetes_prod_gitops.git
       targetRevision: master
-      ref: values  
+      ref: values
 
   destination:
     server: https://kubernetes.default.svc
