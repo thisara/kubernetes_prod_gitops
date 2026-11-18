@@ -9,3 +9,4 @@ resources:
   - 05-telemetry.yaml
   - 06-kiali.yaml
   - 07-eso.yaml
+  - 08-alb-controller.yaml
