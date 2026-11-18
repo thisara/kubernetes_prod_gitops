@@ -6,9 +6,9 @@ on:
   push:
     branches:
       - master
-#    paths:
-#      - "alb-controller/**"
-#      - ".github/workflows/install-alb-controller.yml"
+    paths:
+      - "alb-controller/**"
+      - ".github/workflows/install-alb-controller.yml"
 
 permissions:
   id-token: write
