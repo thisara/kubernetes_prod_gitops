@@ -1,0 +1,80 @@
+name: Infra Tools Installation
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+    paths:
+      - "infra-root/infra-root.yaml"
+      - ".github/workflows/install-infra-tools.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: argocd-infra-root
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-2
+  EKS_CLUSTER: file-api-eks
+
+jobs:
+  bootstrap:
+    name: Install Infra Root Application
+
+    runs-on: [self-hosted, linux, eks-platform]
+
+    timeout-minutes: 15
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+
+      # Step 2: Authenticate with AWS using OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 3: Configure Kubernetes access
+      - name: Configure EKS kubeconfig
+        run: |
+          set -euo pipefail
+
+          echo "KUBECONFIG=$RUNNER_TEMP/eks-kubeconfig" >> "$GITHUB_ENV"
+
+          aws eks update-kubeconfig \
+            --name "$EKS_CLUSTER" \
+            --region "$AWS_REGION" \
+            --kubeconfig "$RUNNER_TEMP/eks-kubeconfig"
+
+      # Step 4: Verify cluster access
+      - name: Verify EKS access
+        run: |
+          kubectl get namespace argocd
+          kubectl auth can-i create applications.argoproj.io \
+            --namespace argocd
+
+      # Step 5: Bootstrap root Application
+      - name: Apply Argo CD root Application
+        run: |
+          set -euo pipefail
+
+          kubectl apply \
+            -f infra-root/infra-root.yaml
+
+      # Step 6: Verify root Application
+      - name: Verify platform root
+        run: |
+          set -euo pipefail
+
+          kubectl get application infra-root \
+            -n argocd
+
+          kubectl get applications -n argocd
