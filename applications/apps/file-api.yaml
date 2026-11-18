@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: file-api
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/thisara/kubernetes_prod.git
+    targetRevision: HEAD
+    path: helm_repo/file_api_app
+
+    helm:
+      releaseName: file-api
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: file-api
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
