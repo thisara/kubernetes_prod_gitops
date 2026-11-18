@@ -6,9 +6,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "application-root/app-root.yaml"
-      - ".github/workflows/install-app-root.yml"
+ #   paths:
+ #     - "application-root/app-root.yaml"
+ #     - ".github/workflows/install-app-root.yml"
 
 permissions:
   id-token: write
