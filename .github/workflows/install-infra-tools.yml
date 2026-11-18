@@ -24,7 +24,7 @@ env:
 
 jobs:
   bootstrap:
-    name: Install Platform Root Application
+    name: Install Infra Root Application
 
     runs-on: [self-hosted, linux, eks-platform]
 
