@@ -34,7 +34,11 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
 
-      # Validate Kustomize configuration
+      - name: Install YAML dependencies
+        run: |
+          python3 -m pip install "PyYAML==6.0.2"
+
+      # Validate Kustomize
       - name: Validate infrastructure applications
         run: |
           kubectl kustomize infra-tools/apps \
@@ -42,17 +46,30 @@ jobs:
 
           test -s /tmp/infra-applications.yaml
 
-      # Validate telemetry manifest
+      # Validate Istio Telemetry YAML offline
       - name: Validate telemetry manifest
         run: |
-          kubectl apply \
-            --dry-run=client \
-            --validate=false \
-            -f infra-tools/istio/telemetry/telemetry.yaml \
-            -o yaml > /tmp/telemetry-validated.yaml
+          python3 - <<'PY'
+          import yaml
 
-      # Validate Argo CD source/sources configuration
-      - name: Validate Argo CD Application sources
+          path = "infra-tools/istio/telemetry/telemetry.yaml"
+
+          with open(path) as f:
+              documents = list(yaml.safe_load_all(f))
+
+          for document in documents:
+              if not document:
+                  continue
+
+              assert document.get("apiVersion"), "Missing apiVersion"
+              assert document.get("kind"), "Missing kind"
+              assert document.get("metadata", {}).get("name"), "Missing metadata.name"
+
+          print("Telemetry YAML validation successful")
+          PY
+
+      # Validate Argo CD Application configurations
+      - name: Validate Argo CD Applications
         run: |
           python3 - <<'PY'
           import glob
@@ -62,9 +79,7 @@ jobs:
 
           for file in files:
               with open(file) as f:
-                  docs = yaml.safe_load_all(f)
-
-                  for doc in docs:
+                  for doc in yaml.safe_load_all(f):
                       if not isinstance(doc, dict):
                           continue
 
@@ -72,6 +87,9 @@ jobs:
                           continue
 
                       spec = doc.get("spec", {})
+
+                      assert not ("source" in spec and "sources" in spec), \
+                          f"{file}: Cannot use both source and sources"
 
                       if "source" in spec:
                           assert isinstance(spec["source"], dict), \
@@ -81,8 +99,8 @@ jobs:
                           assert isinstance(spec["sources"], list), \
                               f"{file}: spec.sources must be an array"
 
-                      assert not ("source" in spec and "sources" in spec), \
-                          f"{file}: use either source or sources"
+                      assert "source" in spec or "sources" in spec, \
+                          f"{file}: Missing source or sources"
 
                       print(f"Validated: {file}")
           PY
