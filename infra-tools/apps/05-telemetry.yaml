@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/thisara/kubernetes_prod_gitops.git
     targetRevision: master
-    path: platform/istio/telemetry
+    path: infra-tools/istio/telemetry
 
   destination:
     server: https://kubernetes.default.svc
